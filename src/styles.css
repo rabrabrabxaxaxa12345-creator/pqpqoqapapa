@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #140c12;
+  --color-bg-deep: #0c070c;
+  --color-surface: #2a1822;
+  --color-surface-2: #3c2430;
+  --color-fg: #f6ead7;
+  --color-muted: #c4aa96;
+  --color-ember: #ff7a2f;
+  --color-on-ember: #2a1208;
+  --color-gold: #f0c56a;
+  --color-line: #5c3b46;
+  --font-display: "Unbounded", system-ui, sans-serif;
+  --font-sans: "Manrope", system-ui, sans-serif;
+  --radius: 1.25rem;
+}
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 3px;
+  }
+}
+
+.safe {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.enter {
+  animation: rise-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.flame-swatch {
+  width: 2.5rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 50% 72%,
+    var(--flame-core) 0%,
+    var(--flame-mid) 38%,
+    transparent 70%
+  );
+  filter: drop-shadow(0 0 10px var(--flame-out));
+}
+
+.wick-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--color-ember);
+}
+
+.wick-fill[data-low="1"] {
+  background: var(--color-gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter {
+    animation: none;
+  }
+}

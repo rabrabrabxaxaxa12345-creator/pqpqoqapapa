@@ -1,0 +1,108 @@
+export const FLAMES = [
+  {
+    id: "iskra",
+    name: "Искра",
+    cost: 0,
+    hint: "родной огонь",
+    core: "#fff4d2",
+    mid: "#ffb03a",
+    out: "#ff5a1a",
+  },
+  {
+    id: "yantar",
+    name: "Янтарь",
+    cost: 350,
+    hint: "густой мёд",
+    core: "#fff1c2",
+    mid: "#ff9a1f",
+    out: "#e25a00",
+  },
+  {
+    id: "sazha",
+    name: "Сажа",
+    cost: 500,
+    hint: "тёмный фитиль",
+    core: "#ffd0c8",
+    mid: "#c4382a",
+    out: "#2a1214",
+  },
+  {
+    id: "yad",
+    name: "Яд",
+    cost: 1000,
+    hint: "болотная свеча",
+    core: "#e8ffb0",
+    mid: "#7dce3a",
+    out: "#2f6a18",
+  },
+  {
+    id: "malina",
+    name: "Малина",
+    cost: 800,
+    hint: "ночная ягода",
+    core: "#ffe0ea",
+    mid: "#ff5d8a",
+    out: "#c41d52",
+  },
+  {
+    id: "iney",
+    name: "Иней",
+    cost: 1600,
+    hint: "холодный свет",
+    core: "#f3fbff",
+    mid: "#8ad7ff",
+    out: "#3aa0d8",
+  },
+  {
+    id: "zoloto",
+    name: "Золото",
+    cost: 3200,
+    hint: "царский фитиль",
+    core: "#fff8dc",
+    mid: "#ffd76a",
+    out: "#e0a020",
+  },
+  {
+    id: "prizrak",
+    name: "Призрак",
+    cost: 2000,
+    hint: "почти не виден",
+    core: "#ffffff",
+    mid: "#d7e4ff",
+    out: "#8aa0c8",
+  },
+  {
+    id: "groza",
+    name: "Гроза",
+    cost: 2600,
+    hint: "синяя искра",
+    core: "#e8fbff",
+    mid: "#3ec8ff",
+    out: "#1a5cff",
+  },
+  {
+    id: "vishnya",
+    name: "Вишня",
+    cost: 3800,
+    hint: "густой сок",
+    core: "#ffd0dc",
+    mid: "#e23a62",
+    out: "#7a1230",
+  },
+  {
+    id: "siren",
+    name: "Сирень",
+    cost: 5200,
+    hint: "ночной сад",
+    core: "#f4e4ff",
+    mid: "#c084fc",
+    out: "#6d28d9",
+  },
+] as const;
+
+export type FlameId = (typeof FLAMES)[number]["id"];
+export type Flame = (typeof FLAMES)[number];
+
+export function flameById(id: string): Flame {
+  return FLAMES.find((f) => f.id === id) ?? FLAMES[0];
+}
