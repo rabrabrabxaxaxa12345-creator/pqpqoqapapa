@@ -358,6 +358,46 @@ function drawSpark(ctx: CanvasRenderingContext2D, x: number, y: number, time: nu
   ctx.restore();
 }
 
+function drawBoost(ctx: CanvasRenderingContext2D, x: number, y: number, time: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.strokeStyle = "#ffb03a";
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.arc(0, 0, 15 + Math.sin(time * 6) * 1.2, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "#ffd27a";
+  ctx.beginPath();
+  ctx.moveTo(0, -8);
+  ctx.lineTo(6, 2);
+  ctx.lineTo(2, 2);
+  ctx.lineTo(2, 8);
+  ctx.lineTo(-2, 8);
+  ctx.lineTo(-2, 2);
+  ctx.lineTo(-6, 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawMagnet(ctx: CanvasRenderingContext2D, x: number, y: number, time: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.strokeStyle = "#f6ead7";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 1, 10, Math.PI * 0.15, Math.PI * 0.85, true);
+  ctx.stroke();
+  ctx.fillStyle = "#ffb03a";
+  ctx.fillRect(-12, -2, 4, 8);
+  ctx.fillRect(8, -2, 4, 8);
+  ctx.globalAlpha = 0.35 + Math.sin(time * 5) * 0.15;
+  ctx.beginPath();
+  ctx.arc(0, 0, 16, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function fog(ctx: CanvasRenderingContext2D, lh: number) {
   const g = ctx.createLinearGradient(0, lh * 0.72, 0, lh);
   g.addColorStop(0, "rgba(12, 7, 12, 0)");
@@ -424,6 +464,32 @@ export function drawPlay(
       }
       continue;
     }
+    if (e.kind === "slow") {
+      const y1 = screenY(e.y + e.h, cam, lh);
+      const y2 = screenY(e.y, cam, lh);
+      if (y2 < -20 || y1 > lh + 20) continue;
+      ctx.fillStyle = "rgba(42, 18, 16, 0.55)";
+      ctx.fillRect(e.x, y1, e.gapW, Math.max(0, y2 - y1));
+      ctx.fillStyle = "rgba(90, 36, 28, 0.45)";
+      ctx.fillRect(e.x, y1, e.gapW, 6);
+      continue;
+    }
+    if (e.kind === "goal") {
+      const gy = screenY(e.y, cam, lh);
+      if (gy < -30 || gy > lh + 30) continue;
+      const glow = ctx.createLinearGradient(0, gy - 18, 0, gy + 18);
+      glow.addColorStop(0, "rgba(255, 176, 58, 0)");
+      glow.addColorStop(0.5, "rgba(255, 176, 58, 0.55)");
+      glow.addColorStop(1, "rgba(255, 176, 58, 0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, gy - 18, W, 36);
+      ctx.fillStyle = "#ffe7a8";
+      ctx.fillRect(0, gy - 2, W, 4);
+      ctx.font = "700 13px Unbounded, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("финиш", W / 2, gy - 10);
+      continue;
+    }
     const sy = screenY(e.y, cam, lh);
     if (sy < -80 || sy > lh + 80) continue;
     if (e.kind === "bar" && !e.taken) {
@@ -436,6 +502,10 @@ export function drawPlay(
       drawSpark(ctx, e.x, sy, sim.time + e.y);
     } else if (e.kind === "lantern" && !e.taken) {
       lantern(ctx, e.x, sy, 1, true);
+    } else if (e.kind === "boost" && !e.taken) {
+      drawBoost(ctx, e.x, sy, sim.time);
+    } else if (e.kind === "magnet" && !e.taken) {
+      drawMagnet(ctx, e.x, sy, sim.time);
     }
   }
 
@@ -453,6 +523,13 @@ export function drawPlay(
   const py = screenY(sim.player.y + 14, cam, lh);
   if (sim.player.invuln <= 0 || Math.sin(sim.time * 28) > 0 || !sim.player.alive) {
     drawFlame(ctx, sim.player.x, py, flame, sim.time, sim.player.vx, fade, sim.fanning && sim.player.alive);
+  }
+  if (sim.magnet > 0 && sim.player.alive) {
+    ctx.strokeStyle = "rgba(246, 234, 215, 0.4)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(sim.player.x, py, 58 + Math.sin(sim.time * 5) * 3, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   ctx.font = "700 15px Unbounded, sans-serif";

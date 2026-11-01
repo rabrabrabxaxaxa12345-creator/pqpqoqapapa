@@ -311,22 +311,22 @@ export function createLevel(index: number): Sim {
     const gapW = clamp(252 - index * 8, 118, 270);
     const wander = index === 0 || n < 1 ? 0 : (rng() - 0.5) * (36 + index * 10);
     const gapX = clamp((W - gapW) / 2 + wander, 14, W - 14 - gapW);
-    const slide = index >= 7 && n % 4 === 3 ? (rng() < 0.5 ? -1 : 1) * (22 + index * 2) : 0;
+    const slide = index >= 11 && n % 5 === 4 ? (rng() < 0.5 ? -1 : 1) * 18 : 0;
     const center = gapX + gapW * 0.5;
-    sim.ents.push(pickup("boost", y - 210, center, 16));
-    if (n % 2 === 0) addSpark(y - 70, center + (rng() - 0.5) * gapW * 0.3);
-    if (n % 4 === 2) {
-      sim.ents.push(pickup("magnet", y - 160, center, 16));
-      addSpark(y - 40, gapX - 36);
-      addSpark(y - 40, gapX + gapW + 36);
+    if (n % 2 === 0) sim.ents.push(pickup("boost", y - 220, center, 16));
+    if (n % 2 === 0) addSpark(y - 80, center + (rng() - 0.5) * gapW * 0.28);
+    if (n % 3 === 2) {
+      sim.ents.push(pickup("magnet", y - 150, center, 16));
+      addSpark(y - 30, gapX - 28);
+      addSpark(y - 30, gapX + gapW + 28);
     }
     if (n % 3 === 1) sim.ents.push(pickup("oil", y - 120, gapX + gapW * (rng() < 0.5 ? 0.28 : 0.72), 16));
-    if (index >= 2 && n % 3 === 0) {
+    if (index >= 3 && n % 3 === 0) {
       const left = center >= W / 2;
-      sim.ents.push(left ? makeSlow(y - 250, 150, 0, W * 0.36) : makeSlow(y - 250, 150, W * 0.64, W * 0.36));
+      sim.ents.push(left ? makeSlow(y - 260, 160, 0, W * 0.34) : makeSlow(y - 260, 160, W * 0.66, W * 0.34));
     }
-    if (index >= 6 && n % 5 === 4) {
-      sim.ents.push(makeMoth(y - 130, center, 18 + index, 1.4 + rng()));
+    if (index >= 10 && n % 6 === 5) {
+      sim.ents.push(makeMoth(y - 130, gapX + gapW * (rng() < 0.5 ? 0.18 : 0.82), 12, 1.2 + rng() * 0.4));
     }
     sim.ents.push(makeBar(y, gapX, gapW, slide));
     y += 360 - Math.min(50, index * 3);
@@ -566,20 +566,20 @@ export function tick(sim: Sim, dt: number, input: Input) {
 
   if (!sim.finite) {
     const nextBiome = biomeAt(sim.player.dist);
-  if (nextBiome !== sim.biome) {
-    sim.biome = nextBiome;
-    sim.events.push("sky");
-    sim.popups.push({
-      x: sim.player.x,
-      y: sim.player.y + 46,
-      text: BIOMES[nextBiome]!.name,
-      life: 1.2,
-      max: 1.2,
-    });
-    sim.player.wick = Math.min(100, sim.player.wick + 14);
-    sim.player.invuln = Math.max(sim.player.invuln, 0.85);
-    sim.flash = Math.max(sim.flash, 0.4);
-  }
+    if (nextBiome !== sim.biome) {
+      sim.biome = nextBiome;
+      sim.events.push("sky");
+      sim.popups.push({
+        x: sim.player.x,
+        y: sim.player.y + 46,
+        text: BIOMES[nextBiome]!.name,
+        life: 1.2,
+        max: 1.2,
+      });
+      sim.player.wick = Math.min(100, sim.player.wick + 14);
+      sim.player.invuln = Math.max(sim.player.invuln, 0.85);
+      sim.flash = Math.max(sim.flash, 0.4);
+    }
   }
 
   const drain = 2.35 + speed * 0.0016;
@@ -600,6 +600,20 @@ export function tick(sim: Sim, dt: number, input: Input) {
   }
 
   const pr = 15;
+  if (sim.magnet > 0) {
+    const reach = 230;
+    for (const e of sim.ents) {
+      if (e.kind !== "spark" || e.taken) continue;
+      const dx = sim.player.x - e.x;
+      const dy = sim.player.y - e.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > reach * reach || d2 < 16) continue;
+      const d = Math.sqrt(d2);
+      const step = Math.min(d - 4, 360 * dt);
+      e.x += (dx / d) * step;
+      e.y += (dy / d) * step;
+    }
+  }
   for (const e of sim.ents) {
     if (!sim.player.alive) break;
     if (e.kind === "bar" && !e.resolved && prevY < e.y && sim.player.y >= e.y) {
@@ -640,6 +654,7 @@ export function tick(sim: Sim, dt: number, input: Input) {
         burst(sim, e.x, e.y, "#f0c56a", 12, 80);
       } else if (e.kind === "spark") {
         sim.player.wick = Math.min(100, sim.player.wick + 3);
+        sim.sparksGot++;
         award(sim, 8, e.x, e.y, "+искра");
         sim.events.push("spark");
         burst(sim, e.x, e.y, "#ffe08a", 7, 60);
@@ -654,6 +669,23 @@ export function tick(sim: Sim, dt: number, input: Input) {
           sim.shake = Math.min(1, sim.shake + 0.2);
         }
         burst(sim, e.x, e.y, "#ff7a2f", perfect ? 16 : 8, 100);
+      }
+    } else if ((e.kind === "boost" || e.kind === "magnet") && !e.taken) {
+      const dx = sim.player.x - e.x;
+      const dy = sim.player.y - e.y;
+      const rr = pr + e.r;
+      if (dx * dx + dy * dy >= rr * rr) continue;
+      e.taken = true;
+      if (e.kind === "boost") {
+        sim.boost = 2.3;
+        award(sim, 4, e.x, e.y, "порыв");
+        sim.events.push("boost");
+        burst(sim, e.x, e.y, "#ffb03a", 10, 90);
+      } else {
+        sim.magnet = 4.6;
+        award(sim, 4, e.x, e.y, "магнит");
+        sim.events.push("magnet");
+        burst(sim, e.x, e.y, "#f6ead7", 10, 70);
       }
     }
   }

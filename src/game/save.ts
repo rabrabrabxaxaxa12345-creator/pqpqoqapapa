@@ -12,6 +12,7 @@ export type SaveData = {
   muted: boolean;
   shake: boolean;
   runs: number;
+  stars: number[];
 };
 
 export function defaultSave(): SaveData {
@@ -24,6 +25,7 @@ export function defaultSave(): SaveData {
     muted: false,
     shake: true,
     runs: 0,
+    stars: [],
   };
 }
 
@@ -43,6 +45,7 @@ function migrate(raw: Partial<SaveData>): SaveData {
     muted: Boolean(raw.muted),
     shake: raw.shake === false ? false : true,
     runs: typeof raw.runs === "number" && raw.runs > 0 ? Math.floor(raw.runs) : 0,
+    stars: Array.isArray(raw.stars) ? raw.stars.map((n) => (typeof n === "number" ? n & 7 : 0)) : [],
   };
 }
 

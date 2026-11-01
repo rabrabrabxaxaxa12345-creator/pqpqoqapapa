@@ -88,6 +88,16 @@ export class AudioEngine {
     } else if (ev === "sky") {
       this.tone(523, now, 0.22, 0.05, "sine", this.sfx);
       this.tone(784, now + 0.08, 0.28, 0.04, "triangle", this.sfx);
+    } else if (ev === "boost") {
+      this.tone(440, now, 0.08, 0.05, "square", this.sfx);
+      this.tone(660, now + 0.06, 0.12, 0.04, "triangle", this.sfx);
+    } else if (ev === "magnet") {
+      this.tone(310, now, 0.16, 0.04, "sine", this.sfx);
+      this.tone(466, now + 0.05, 0.14, 0.035, "sine", this.sfx);
+    } else if (ev === "win") {
+      this.tone(523, now, 0.16, 0.05, "triangle", this.sfx);
+      this.tone(659, now + 0.1, 0.18, 0.05, "triangle", this.sfx);
+      this.tone(784, now + 0.2, 0.28, 0.05, "sine", this.sfx);
     }
   }
 

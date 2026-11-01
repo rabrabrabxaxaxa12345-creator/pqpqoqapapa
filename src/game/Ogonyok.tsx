@@ -4,6 +4,7 @@ import { ADS, bannerId, mountBanner, rewardedId, showInterstitial, showRewarded 
 import { AudioEngine } from "@/game/audio";
 import { drawMenu, drawPlay, fit } from "@/game/draw";
 import { FLAMES, flameById, type FlameId } from "@/game/flames";
+import { isOpen, LEVELS, starCount, starsEarned } from "@/game/levels";
 import { defaultSave, loadSave, writeSave, type SaveData } from "@/game/save";
 import {
   BIOMES,
@@ -11,6 +12,7 @@ import {
   W,
   climbSpeed,
   continueRun,
+  createLevel,
   createSim,
   metersOf,
   sparkGain,
@@ -20,7 +22,7 @@ import {
   type Sim,
 } from "@/game/sim";
 
-type Screen = "menu" | "play" | "pause" | "over" | "shop";
+type Screen = "menu" | "levels" | "play" | "pause" | "over" | "shop";
 
 type RunStats = {
   score: number;
@@ -28,6 +30,13 @@ type RunStats = {
   gained: number;
   reason: DeathReason | null;
   record: boolean;
+  won: boolean;
+  level: number;
+  starMask: number;
+  time: number;
+  par: number;
+  sparksLabel: string;
+  levelName: string;
 };
 
 const STEP = 1 / 60;
@@ -72,9 +81,12 @@ export function Ogonyok() {
   const accRef = useRef(0);
   const menuTime = useRef(0);
   const deathLatch = useRef(false);
+  const winLatch = useRef(false);
+  const levelRef = useRef(-1);
   const tutorialRef = useRef(false);
   const reducedRef = useRef(false);
   const onDeadRef = useRef<() => void>(() => {});
+  const onWinRef = useRef<() => void>(() => {});
   const startRef = useRef<() => void>(() => {});
   const scoreRef = useRef<HTMLParagraphElement>(null);
   const meterRef = useRef<HTMLParagraphElement>(null);
@@ -130,16 +142,26 @@ export function Ogonyok() {
     return Math.max(0, Math.min(W, rel * W));
   }
 
-  function startGame() {
+  function begin(sim: Sim, level: number) {
     const audio = getAudio();
     audio.unlock();
     audio.setMuted(saveRef.current.muted);
-    simRef.current = createSim();
+    simRef.current = sim;
+    levelRef.current = level;
     deathLatch.current = false;
+    winLatch.current = false;
     accRef.current = 0;
-    tutorialRef.current = saveRef.current.runs === 0;
+    tutorialRef.current = level < 0 ? saveRef.current.runs === 0 : level === 0 && (saveRef.current.stars[0] ?? 0) === 0;
     setStats(null);
     go("play");
+  }
+
+  function startGame() {
+    begin(createSim(), -1);
+  }
+
+  function startLevel(index: number) {
+    begin(createLevel(index), index);
   }
   startRef.current = startGame;
 
@@ -163,10 +185,56 @@ export function Ogonyok() {
         gained,
         reason: sim.reason,
         record: score > prevBest,
+        won: false,
+        level: levelRef.current,
+        starMask: 0,
+        time: sim.time,
+        par: sim.par,
+        sparksLabel: `${sim.sparksGot}/${sim.sparksTotal}`,
+        levelName: sim.levelName,
       });
       go("over");
       if (ADS.enabled && runIndex % ADS.interstitialEvery === 0) showInterstitial();
     }, 420);
+  };
+
+  onWinRef.current = () => {
+    window.setTimeout(() => {
+      const sim = simRef.current;
+      const level = levelRef.current;
+      if (!sim || !sim.won || screenRef.current !== "play") return;
+      const score = Math.floor(sim.player.score);
+      const gained = sparkGain(score);
+      const mask = starsEarned(true, sim.sparksGot, sim.sparksTotal, sim.time, sim.par);
+      const prevBest = saveRef.current.best;
+      commit((s) => {
+        const stars = s.stars.slice();
+        while (stars.length <= level) stars.push(0);
+        if (level >= 0) stars[level] = (stars[level] ?? 0) | mask;
+        return {
+          ...s,
+          stars,
+          best: Math.max(s.best, score),
+          sparks: s.sparks + gained,
+          runs: s.runs + 1,
+        };
+      });
+      setStats({
+        score,
+        meters: metersOf(sim.player.dist),
+        gained,
+        reason: null,
+        record: score > prevBest,
+        won: true,
+        level,
+        starMask: mask,
+        time: sim.time,
+        par: sim.par,
+        sparksLabel: `${sim.sparksGot}/${sim.sparksTotal}`,
+        levelName: sim.levelName,
+      });
+      go("over");
+    }, 520);
   };
 
   useEffect(() => {
@@ -273,16 +341,34 @@ export function Ogonyok() {
                 onDeadRef.current();
                 break;
               }
+              if (sim.won && !winLatch.current) {
+                winLatch.current = true;
+                onWinRef.current();
+                break;
+              }
             }
           }
           drawPlay(ctx, sim, lh, flame, reducedRef.current, saveRef.current.shake);
           if (mode === "play") {
             const score = Math.floor(sim.player.score);
             if (scoreRef.current) scoreRef.current.textContent = String(score);
-            if (meterRef.current) meterRef.current.textContent = `${metersOf(sim.player.dist)} м`;
-            if (skyRef.current) skyRef.current.textContent = BIOMES[sim.biome]?.name ?? "";
+            if (meterRef.current) {
+              meterRef.current.textContent = sim.finite
+                ? `${sim.sparksGot}/${sim.sparksTotal} искр`
+                : `${metersOf(sim.player.dist)} м`;
+            }
+            if (skyRef.current) skyRef.current.textContent = sim.finite ? sim.levelName : (BIOMES[sim.biome]?.name ?? "");
             if (comboRef.current) {
-              comboRef.current.textContent = sim.player.combo >= 2 ? `серия ×${sim.player.combo}` : "";
+              comboRef.current.textContent =
+                sim.player.combo >= 2
+                  ? `серия ×${sim.player.combo}`
+                  : sim.boost > 0
+                    ? "порыв"
+                    : sim.magnet > 0
+                      ? "магнит"
+                      : sim.slowing
+                        ? "смола"
+                        : "";
             }
             if (wickRef.current) {
               const wick = Math.max(0, sim.player.wick);
@@ -291,7 +377,11 @@ export function Ogonyok() {
             }
             if (hintRef.current) {
               hintRef.current.textContent =
-                tutorialRef.current && sim.time < 2.8 ? "Веди пальцем — пламя за тобой" : "";
+                tutorialRef.current && sim.time < 3.2
+                  ? sim.finite
+                    ? "Кольцо ускоряет. Магнит тянет искры с краёв."
+                    : "Веди пальцем — пламя за тобой"
+                  : "";
             }
           }
         } else if (mode === "pause" && sim) {
@@ -348,7 +438,7 @@ export function Ogonyok() {
   }
 
   function pause() {
-    if (!simRef.current?.player.alive) return;
+    if (!simRef.current?.player.alive || simRef.current.won) return;
     go("pause");
   }
 
@@ -402,7 +492,7 @@ export function Ogonyok() {
             <p className="font-display text-xs font-semibold tracking-widest text-gold uppercase">ночной подъём</p>
             <h1 className="mt-2 font-display text-5xl font-bold text-balance text-fg">Огонёк</h1>
             <p className="mt-3 max-w-xs text-sm text-pretty text-muted">
-              Веди пальцем или мышью. Пролетай в просветы и пей масло — фитиль тает сам.
+              Пятнадцать дворов. Звезда за финиш, за все искры и за быстрый подъём.
             </p>
           </div>
           <div className="flex-1" />
@@ -411,14 +501,23 @@ export function Ogonyok() {
               Рекорд <span className="font-display text-base text-fg">{save.best}</span>
               <span className="mx-2 text-line">·</span>
               Искры <span className="text-gold">{save.sparks}</span>
+              <span className="mx-2 text-line">·</span>
+              Звёзды <span className="text-gold">{save.stars.reduce((sum, mask) => sum + starCount(mask), 0)}</span>
             </p>
             <button
               type="button"
-              onClick={startGame}
+              onClick={() => go("levels")}
               className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ember font-display text-lg font-semibold text-on-ember"
             >
               <Play className="size-5" aria-hidden />
-              Играть
+              Уровни
+            </button>
+            <button
+              type="button"
+              onClick={startGame}
+              className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full border border-line bg-surface text-sm font-semibold text-fg"
+            >
+              Без конца
             </button>
             <button
               type="button"
@@ -518,24 +617,55 @@ export function Ogonyok() {
         <div className="safe pointer-events-none absolute inset-0 flex items-end">
           <div data-ui className="enter pointer-events-auto m-3 w-full rounded-3xl border border-line bg-bg/92 px-4 py-4 backdrop-blur-md">
             <p className="text-xs font-semibold tracking-widest text-gold uppercase">
-              {stats.reason === "wick" ? "Фитиль сгорел" : "Сбился с пути"}
+              {stats.won ? stats.levelName || "Пройдено" : stats.reason === "wick" ? "Фитиль сгорел" : "Сбился с пути"}
             </p>
-            <p className="mt-1 font-display text-5xl font-bold text-fg tabular-nums">{stats.score}</p>
+            {stats.won ? (
+              <p className="mt-2 font-display text-3xl tracking-[0.3em] text-gold">
+                <span className={stats.starMask & 1 ? "" : "opacity-25"}>★</span>
+                <span className={stats.starMask & 2 ? "" : "opacity-25"}>★</span>
+                <span className={stats.starMask & 4 ? "" : "opacity-25"}>★</span>
+              </p>
+            ) : (
+              <p className="mt-1 font-display text-5xl font-bold text-fg tabular-nums">{stats.score}</p>
+            )}
             <p className="mt-1 text-sm text-muted tabular-nums">
-              Высота {stats.meters} м
-              <span className="mx-2 text-line">·</span>
-              +{stats.gained} искр
+              {stats.won ? (
+                <>
+                  {stats.time.toFixed(1)} с из {stats.par} с
+                  <span className="mx-2 text-line">·</span>
+                  искры {stats.sparksLabel}
+                </>
+              ) : (
+                <>
+                  Высота {stats.meters} м
+                  <span className="mx-2 text-line">·</span>
+                  +{stats.gained} искр
+                </>
+              )}
             </p>
-            {stats.record && <p className="mt-1 font-display text-sm text-gold">Новый рекорд</p>}
+            {stats.won && (
+              <p className="mt-1 text-xs text-muted">Финиш, все искры, уложиться в темп.</p>
+            )}
+            {stats.record && !stats.won && <p className="mt-1 font-display text-sm text-gold">Новый рекорд</p>}
+            {stats.won && stats.level >= 0 && stats.level + 1 < LEVELS.length && (
+              <button
+                type="button"
+                onClick={() => startLevel(stats.level + 1)}
+                className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ember font-display text-lg font-semibold text-on-ember"
+              >
+                <Play className="size-5" aria-hidden />
+                Дальше
+              </button>
+            )}
             <button
               type="button"
-              onClick={startGame}
-              className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ember font-display text-lg font-semibold text-on-ember"
+              onClick={() => (stats.level >= 0 ? startLevel(stats.level) : startGame())}
+              className={`${stats.won && stats.level + 1 < LEVELS.length ? "mt-2 h-12 border border-line bg-surface text-sm text-fg" : "mt-4 h-14 bg-ember font-display text-lg text-on-ember"} flex w-full items-center justify-center gap-2 rounded-full font-semibold`}
             >
               <RotateCcw className="size-5" aria-hidden />
               Ещё раз
             </button>
-            {!continued && reward && (
+            {!stats.won && !continued && reward && (
               <button
                 type="button"
                 onClick={continueAd}
@@ -545,7 +675,7 @@ export function Ogonyok() {
                 {adBusy ? "Реклама…" : "Продолжить за рекламу"}
               </button>
             )}
-            {!continued && (
+            {!stats.won && !continued && (
               <button
                 type="button"
                 onClick={continuePaid}
@@ -557,14 +687,50 @@ export function Ogonyok() {
             )}
             <button
               type="button"
-              onClick={() => go("menu")}
+              onClick={() => go(stats.level >= 0 ? "levels" : "menu")}
               className="mt-2 flex h-12 w-full items-center justify-center gap-2 text-sm font-semibold text-muted"
             >
               <House className="size-4" />
-              В меню
+              {stats.level >= 0 ? "К уровням" : "В меню"}
             </button>
           </div>
         </div>
+      )}
+
+      {screen === "levels" && (
+        <Sheet
+          title="Уровни"
+          subtitle={`${save.stars.reduce((sum, mask) => sum + starCount(mask), 0)} / ${LEVELS.length * 3}`}
+          onClose={() => go("menu")}
+        >
+          <p className="mb-3 text-sm text-muted">
+            Звезда за финиш, за каждую искру и за подъём быстрее нормы. Жёлтое кольцо ускоряет, дуга — магнит, тёмная лужа — смола.
+          </p>
+          <ul className="flex flex-col gap-2">
+            {LEVELS.map((level, index) => {
+              const open = isOpen(save.stars, index);
+              const mask = save.stars[index] ?? 0;
+              return (
+                <li key={level.name}>
+                  <button
+                    type="button"
+                    disabled={!open}
+                    onClick={() => startLevel(index)}
+                    className="flex h-14 w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 text-left disabled:opacity-40"
+                  >
+                    <span className="w-7 font-display text-lg text-gold tabular-nums">{index + 1}</span>
+                    <span className="min-w-0 flex-1 truncate font-semibold text-fg">{open ? level.name : "Закрыт"}</span>
+                    <span className="font-display tracking-widest text-gold">
+                      <span className={mask & 1 ? "" : "opacity-25"}>★</span>
+                      <span className={mask & 2 ? "" : "opacity-25"}>★</span>
+                      <span className={mask & 4 ? "" : "opacity-25"}>★</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Sheet>
       )}
 
       {screen === "shop" && (

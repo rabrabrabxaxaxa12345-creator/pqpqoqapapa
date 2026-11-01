@@ -1,7 +1,7 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { K as require_react, b as require_jsx_runtime } from "../_libs/@tanstack/react-router+[...].mjs";
 import { a as RotateCcw, c as House, l as Flame, n as VolumeX, o as Play, r as Volume2, s as Pause, t as X } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BcveKHk9.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-DP66vx_I.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 /**
@@ -253,6 +253,16 @@ var AudioEngine = class {
 		} else if (ev === "sky") {
 			this.tone(523, now, .22, .05, "sine", this.sfx);
 			this.tone(784, now + .08, .28, .04, "triangle", this.sfx);
+		} else if (ev === "boost") {
+			this.tone(440, now, .08, .05, "square", this.sfx);
+			this.tone(660, now + .06, .12, .04, "triangle", this.sfx);
+		} else if (ev === "magnet") {
+			this.tone(310, now, .16, .04, "sine", this.sfx);
+			this.tone(466, now + .05, .14, .035, "sine", this.sfx);
+		} else if (ev === "win") {
+			this.tone(523, now, .16, .05, "triangle", this.sfx);
+			this.tone(659, now + .1, .18, .05, "triangle", this.sfx);
+			this.tone(784, now + .2, .28, .05, "sine", this.sfx);
 		}
 	}
 	tone(freq, when, dur, gain, type, bus) {
@@ -291,6 +301,141 @@ var AudioEngine = class {
 		src.stop(when + dur);
 	}
 };
+var LEVELS = [
+	{
+		name: "Тихий двор",
+		seed: 11,
+		goal: 2500,
+		par: 26,
+		biome: 0,
+		pace: 100
+	},
+	{
+		name: "Фонари",
+		seed: 23,
+		goal: 2900,
+		par: 28,
+		biome: 0,
+		pace: 104
+	},
+	{
+		name: "Провода",
+		seed: 37,
+		goal: 3100,
+		par: 28,
+		biome: 1,
+		pace: 108
+	},
+	{
+		name: "Проулок",
+		seed: 41,
+		goal: 3300,
+		par: 28,
+		biome: 1,
+		pace: 110
+	},
+	{
+		name: "Крыши",
+		seed: 59,
+		goal: 3500,
+		par: 28,
+		biome: 1,
+		pace: 114
+	},
+	{
+		name: "Сквозняк",
+		seed: 67,
+		goal: 3700,
+		par: 28,
+		biome: 2,
+		pace: 116
+	},
+	{
+		name: "Метель",
+		seed: 73,
+		goal: 3900,
+		par: 32,
+		biome: 2,
+		pace: 118
+	},
+	{
+		name: "Дым",
+		seed: 89,
+		goal: 4100,
+		par: 33,
+		biome: 2,
+		pace: 120
+	},
+	{
+		name: "Рассвет",
+		seed: 97,
+		goal: 4300,
+		par: 33,
+		biome: 3,
+		pace: 122
+	},
+	{
+		name: "Решётки",
+		seed: 103,
+		goal: 4500,
+		par: 34,
+		biome: 3,
+		pace: 124
+	},
+	{
+		name: "Высота",
+		seed: 127,
+		goal: 4700,
+		par: 35,
+		biome: 4,
+		pace: 126
+	},
+	{
+		name: "Искра",
+		seed: 131,
+		goal: 4900,
+		par: 35,
+		biome: 4,
+		pace: 128
+	},
+	{
+		name: "Буря",
+		seed: 149,
+		goal: 5100,
+		par: 36,
+		biome: 2,
+		pace: 130
+	},
+	{
+		name: "Уголь",
+		seed: 157,
+		goal: 5300,
+		par: 37,
+		biome: 3,
+		pace: 132
+	},
+	{
+		name: "Последний фитиль",
+		seed: 173,
+		goal: 5600,
+		par: 38,
+		biome: 4,
+		pace: 134
+	}
+];
+function starCount(mask) {
+	return (mask & 1) + ((mask & 2) >> 1) + ((mask & 4) >> 2);
+}
+function isOpen(masks, index) {
+	return index <= 0 || ((masks[index - 1] ?? 0) & 1) === 1;
+}
+function starsEarned(won, got, need, time, par) {
+	if (!won) return 0;
+	let mask = 1;
+	if (need > 0 && got >= need) mask |= 2;
+	if (time <= par + .05) mask |= 4;
+	return mask;
+}
 var STEP_LOOK = 980;
 function sparkGain(score) {
 	return Math.max(3, Math.round(score / 15));
@@ -390,6 +535,38 @@ function pickup(kind, y, x, r) {
 		r
 	};
 }
+function makeSlow(y, h, x, w) {
+	return {
+		kind: "slow",
+		y,
+		x,
+		h,
+		gapX: 0,
+		gapW: w,
+		phase: 0,
+		amp: 0,
+		force: 0,
+		taken: false,
+		resolved: false,
+		r: 0
+	};
+}
+function makeGoal(y) {
+	return {
+		kind: "goal",
+		y,
+		x: 0,
+		h: 8,
+		gapX: 0,
+		gapW: 390,
+		phase: 0,
+		amp: 0,
+		force: 0,
+		taken: false,
+		resolved: false,
+		r: 0
+	};
+}
 function makeWind(y, h, force) {
 	return {
 		kind: "wind",
@@ -436,13 +613,72 @@ function createSim(seed = Date.now() % 1e9) {
 		justDied: false,
 		fanning: false,
 		events: [],
-		biome: 0
+		biome: 0,
+		goal: 0,
+		par: 0,
+		pace: 0,
+		finite: false,
+		sparksGot: 0,
+		sparksTotal: 0,
+		boost: 0,
+		magnet: 0,
+		slowing: false,
+		won: false,
+		levelName: ""
 	};
 	sim.ents.push(pickup("spark", 320, 195, 12));
 	sim.ents.push(pickup("spark", 480, 167, 12));
 	sim.ents.push(pickup("oil", 680, 205, 16));
 	sim.ents.push(makeBar(980, 60, 270, 0));
 	sim.nextY = 1480;
+	return sim;
+}
+function createLevel(index) {
+	const def = LEVELS[index] ?? LEVELS[0];
+	const sim = createSim(def.seed);
+	sim.ents.length = 0;
+	sim.goal = def.goal;
+	sim.par = def.par;
+	sim.pace = def.pace;
+	sim.finite = true;
+	sim.biome = def.biome;
+	sim.levelName = def.name;
+	sim.player.invuln = 1.1;
+	const rng = sim.rng;
+	const addSpark = (y, x) => {
+		sim.ents.push(pickup("spark", y, clamp(x, 22, 368), 12));
+		sim.sparksTotal++;
+	};
+	addSpark(300, 195);
+	addSpark(460, 171);
+	sim.ents.push(pickup("oil", 640, 203, 16));
+	let y = 980;
+	let n = 0;
+	while (y < def.goal - 420) {
+		const gapW = clamp(252 - index * 8, 118, 270);
+		const wander = index === 0 || n < 1 ? 0 : (rng() - .5) * (36 + index * 10);
+		const gapX = clamp((390 - gapW) / 2 + wander, 14, 376 - gapW);
+		const slide = index >= 11 && n % 5 === 4 ? (rng() < .5 ? -1 : 1) * 18 : 0;
+		const center = gapX + gapW * .5;
+		if (n % 2 === 0) sim.ents.push(pickup("boost", y - 220, center, 16));
+		if (n % 2 === 0) addSpark(y - 80, center + (rng() - .5) * gapW * .28);
+		if (n % 3 === 2) {
+			sim.ents.push(pickup("magnet", y - 150, center, 16));
+			addSpark(y - 30, gapX - 28);
+			addSpark(y - 30, gapX + gapW + 28);
+		}
+		if (n % 3 === 1) sim.ents.push(pickup("oil", y - 120, gapX + gapW * (rng() < .5 ? .28 : .72), 16));
+		if (index >= 3 && n % 3 === 0) {
+			const left = center >= 195;
+			sim.ents.push(left ? makeSlow(y - 260, 160, 0, 390 * .34) : makeSlow(y - 260, 160, 390 * .66, 390 * .34));
+		}
+		if (index >= 10 && n % 6 === 5) sim.ents.push(makeMoth(y - 130, gapX + gapW * (rng() < .5 ? .18 : .82), 12, 1.2 + rng() * .4));
+		sim.ents.push(makeBar(y, gapX, gapW, slide));
+		y += 360 - Math.min(50, index * 3);
+		n++;
+	}
+	sim.ents.push(makeGoal(def.goal));
+	sim.nextY = 1e9;
 	return sim;
 }
 function continueRun(sim) {
@@ -578,6 +814,12 @@ function updateFx(sim, dt) {
 	sim.popups.length = j;
 }
 function tick(sim, dt, input) {
+	if (sim.won) {
+		updateFx(sim, dt);
+		sim.shake = Math.max(0, sim.shake - dt * 1.55);
+		sim.flash = Math.max(0, sim.flash - dt * 2.1);
+		return;
+	}
 	sim.time += dt;
 	sim.fanning = input.pointer;
 	updateFx(sim, dt);
@@ -592,12 +834,13 @@ function tick(sim, dt, input) {
 		sim.player.comboLeft -= dt;
 		if (sim.player.comboLeft <= 0) sim.player.combo = 0;
 	}
-	const speed = climbSpeed(sim.player.dist);
 	const prevX = sim.player.x;
 	const prevY = sim.player.y;
 	let wind = 0;
+	let slowing = false;
 	for (const e of sim.ents) {
 		if (e.kind === "wind" && sim.player.y > e.y && sim.player.y < e.y + e.h) wind += e.force;
+		if (e.kind === "slow" && sim.player.y > e.y && sim.player.y < e.y + e.h && sim.player.x > e.x && sim.player.x < e.x + e.gapW) slowing = true;
 		if (e.kind === "bar" && e.force !== 0 && !e.resolved) {
 			e.gapX += e.force * dt;
 			const min = 12;
@@ -612,6 +855,10 @@ function tick(sim, dt, input) {
 		}
 	}
 	sim.wind = wind;
+	sim.slowing = slowing;
+	if (sim.boost > 0) sim.boost -= dt;
+	if (sim.magnet > 0) sim.magnet -= dt;
+	const speed = (sim.pace > 0 ? sim.pace : climbSpeed(sim.player.dist)) * (sim.boost > 0 ? 1.62 : 1) * (slowing ? .5 : 1);
 	if (input.pointer) {
 		const follow = 1 - Math.exp(-14 * dt);
 		sim.player.x += (input.pointerX - sim.player.x) * follow;
@@ -625,20 +872,29 @@ function tick(sim, dt, input) {
 	sim.player.y += speed * dt;
 	sim.player.dist += speed * dt;
 	sim.player.score += speed * dt * .085;
-	const nextBiome = biomeAt(sim.player.dist);
-	if (nextBiome !== sim.biome) {
-		sim.biome = nextBiome;
-		sim.events.push("sky");
-		sim.popups.push({
-			x: sim.player.x,
-			y: sim.player.y + 46,
-			text: BIOMES[nextBiome].name,
-			life: 1.2,
-			max: 1.2
-		});
-		sim.player.wick = Math.min(100, sim.player.wick + 14);
-		sim.player.invuln = Math.max(sim.player.invuln, .85);
-		sim.flash = Math.max(sim.flash, .4);
+	if (sim.goal > 0 && sim.player.y >= sim.goal) {
+		sim.player.y = sim.goal;
+		sim.won = true;
+		sim.events.push("win");
+		sim.flash = Math.max(sim.flash, .55);
+		return;
+	}
+	if (!sim.finite) {
+		const nextBiome = biomeAt(sim.player.dist);
+		if (nextBiome !== sim.biome) {
+			sim.biome = nextBiome;
+			sim.events.push("sky");
+			sim.popups.push({
+				x: sim.player.x,
+				y: sim.player.y + 46,
+				text: BIOMES[nextBiome].name,
+				life: 1.2,
+				max: 1.2
+			});
+			sim.player.wick = Math.min(100, sim.player.wick + 14);
+			sim.player.invuln = Math.max(sim.player.invuln, .85);
+			sim.flash = Math.max(sim.flash, .4);
+		}
 	}
 	const drain = 2.35 + speed * .0016;
 	sim.player.wick -= drain * dt;
@@ -654,6 +910,17 @@ function tick(sim, dt, input) {
 		grav: -40
 	});
 	const pr = 15;
+	if (sim.magnet > 0) for (const e of sim.ents) {
+		if (e.kind !== "spark" || e.taken) continue;
+		const dx = sim.player.x - e.x;
+		const dy = sim.player.y - e.y;
+		const d2 = dx * dx + dy * dy;
+		if (d2 > 52900 || d2 < 16) continue;
+		const d = Math.sqrt(d2);
+		const step = Math.min(d - 4, 360 * dt);
+		e.x += dx / d * step;
+		e.y += dy / d * step;
+	}
 	for (const e of sim.ents) {
 		if (!sim.player.alive) break;
 		if (e.kind === "bar" && !e.resolved && prevY < e.y && sim.player.y >= e.y) {
@@ -693,6 +960,7 @@ function tick(sim, dt, input) {
 				burst(sim, e.x, e.y, "#f0c56a", 12, 80);
 			} else if (e.kind === "spark") {
 				sim.player.wick = Math.min(100, sim.player.wick + 3);
+				sim.sparksGot++;
 				award(sim, 8, e.x, e.y, "+искра");
 				sim.events.push("spark");
 				burst(sim, e.x, e.y, "#ffe08a", 7, 60);
@@ -707,6 +975,23 @@ function tick(sim, dt, input) {
 					sim.shake = Math.min(1, sim.shake + .2);
 				}
 				burst(sim, e.x, e.y, "#ff7a2f", perfect ? 16 : 8, 100);
+			}
+		} else if ((e.kind === "boost" || e.kind === "magnet") && !e.taken) {
+			const dx = sim.player.x - e.x;
+			const dy = sim.player.y - e.y;
+			const rr = pr + e.r;
+			if (dx * dx + dy * dy >= rr * rr) continue;
+			e.taken = true;
+			if (e.kind === "boost") {
+				sim.boost = 2.3;
+				award(sim, 4, e.x, e.y, "порыв");
+				sim.events.push("boost");
+				burst(sim, e.x, e.y, "#ffb03a", 10, 90);
+			} else {
+				sim.magnet = 4.6;
+				award(sim, 4, e.x, e.y, "магнит");
+				sim.events.push("magnet");
+				burst(sim, e.x, e.y, "#f6ead7", 10, 70);
 			}
 		}
 	}
@@ -1029,6 +1314,44 @@ function drawSpark(ctx, x, y, time) {
 	}
 	ctx.restore();
 }
+function drawBoost(ctx, x, y, time) {
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.strokeStyle = "#ffb03a";
+	ctx.lineWidth = 2.4;
+	ctx.beginPath();
+	ctx.arc(0, 0, 15 + Math.sin(time * 6) * 1.2, 0, Math.PI * 2);
+	ctx.stroke();
+	ctx.fillStyle = "#ffd27a";
+	ctx.beginPath();
+	ctx.moveTo(0, -8);
+	ctx.lineTo(6, 2);
+	ctx.lineTo(2, 2);
+	ctx.lineTo(2, 8);
+	ctx.lineTo(-2, 8);
+	ctx.lineTo(-2, 2);
+	ctx.lineTo(-6, 2);
+	ctx.closePath();
+	ctx.fill();
+	ctx.restore();
+}
+function drawMagnet(ctx, x, y, time) {
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.strokeStyle = "#f6ead7";
+	ctx.lineWidth = 3;
+	ctx.beginPath();
+	ctx.arc(0, 1, 10, Math.PI * .15, Math.PI * .85, true);
+	ctx.stroke();
+	ctx.fillStyle = "#ffb03a";
+	ctx.fillRect(-12, -2, 4, 8);
+	ctx.fillRect(8, -2, 4, 8);
+	ctx.globalAlpha = .35 + Math.sin(time * 5) * .15;
+	ctx.beginPath();
+	ctx.arc(0, 0, 16, 0, Math.PI * 2);
+	ctx.stroke();
+	ctx.restore();
+}
 function fog(ctx, lh) {
 	const g = ctx.createLinearGradient(0, lh * .72, 0, lh);
 	g.addColorStop(0, "rgba(12, 7, 12, 0)");
@@ -1077,6 +1400,32 @@ function drawPlay(ctx, sim, lh, flame, reduced, allowShake) {
 			}
 			continue;
 		}
+		if (e.kind === "slow") {
+			const y1 = screenY(e.y + e.h, cam, lh);
+			const y2 = screenY(e.y, cam, lh);
+			if (y2 < -20 || y1 > lh + 20) continue;
+			ctx.fillStyle = "rgba(42, 18, 16, 0.55)";
+			ctx.fillRect(e.x, y1, e.gapW, Math.max(0, y2 - y1));
+			ctx.fillStyle = "rgba(90, 36, 28, 0.45)";
+			ctx.fillRect(e.x, y1, e.gapW, 6);
+			continue;
+		}
+		if (e.kind === "goal") {
+			const gy = screenY(e.y, cam, lh);
+			if (gy < -30 || gy > lh + 30) continue;
+			const glow = ctx.createLinearGradient(0, gy - 18, 0, gy + 18);
+			glow.addColorStop(0, "rgba(255, 176, 58, 0)");
+			glow.addColorStop(.5, "rgba(255, 176, 58, 0.55)");
+			glow.addColorStop(1, "rgba(255, 176, 58, 0)");
+			ctx.fillStyle = glow;
+			ctx.fillRect(0, gy - 18, 390, 36);
+			ctx.fillStyle = "#ffe7a8";
+			ctx.fillRect(0, gy - 2, 390, 4);
+			ctx.font = "700 13px Unbounded, sans-serif";
+			ctx.textAlign = "center";
+			ctx.fillText("финиш", 195, gy - 10);
+			continue;
+		}
 		const sy = screenY(e.y, cam, lh);
 		if (sy < -80 || sy > lh + 80) continue;
 		if (e.kind === "bar" && !e.taken) drawBar(ctx, e.gapX, sy, e.gapW, e.h);
@@ -1084,6 +1433,8 @@ function drawPlay(ctx, sim, lh, flame, reduced, allowShake) {
 		else if (e.kind === "oil" && !e.taken) drawOil(ctx, e.x, sy, sim.time);
 		else if (e.kind === "spark" && !e.taken) drawSpark(ctx, e.x, sy, sim.time + e.y);
 		else if (e.kind === "lantern" && !e.taken) lantern(ctx, e.x, sy, 1, true);
+		else if (e.kind === "boost" && !e.taken) drawBoost(ctx, e.x, sy, sim.time);
+		else if (e.kind === "magnet" && !e.taken) drawMagnet(ctx, e.x, sy, sim.time);
 	}
 	for (const p of sim.particles) {
 		const sy = screenY(p.y, cam, lh);
@@ -1097,6 +1448,13 @@ function drawPlay(ctx, sim, lh, flame, reduced, allowShake) {
 	const fade = sim.player.alive ? 1 : Math.max(0, 1 - sim.deadFor * 1.4);
 	const py = screenY(sim.player.y + 14, cam, lh);
 	if (sim.player.invuln <= 0 || Math.sin(sim.time * 28) > 0 || !sim.player.alive) drawFlame(ctx, sim.player.x, py, flame, sim.time, sim.player.vx, fade, sim.fanning && sim.player.alive);
+	if (sim.magnet > 0 && sim.player.alive) {
+		ctx.strokeStyle = "rgba(246, 234, 215, 0.4)";
+		ctx.lineWidth = 1.5;
+		ctx.beginPath();
+		ctx.arc(sim.player.x, py, 58 + Math.sin(sim.time * 5) * 3, 0, Math.PI * 2);
+		ctx.stroke();
+	}
 	ctx.font = "700 15px Unbounded, sans-serif";
 	ctx.textAlign = "center";
 	for (const pop of sim.popups) {
@@ -1226,7 +1584,8 @@ function defaultSave() {
 		owned: ["iskra"],
 		muted: false,
 		shake: true,
-		runs: 0
+		runs: 0,
+		stars: []
 	};
 }
 function migrate(raw) {
@@ -1242,7 +1601,8 @@ function migrate(raw) {
 		owned,
 		muted: Boolean(raw.muted),
 		shake: raw.shake === false ? false : true,
-		runs: typeof raw.runs === "number" && raw.runs > 0 ? Math.floor(raw.runs) : 0
+		runs: typeof raw.runs === "number" && raw.runs > 0 ? Math.floor(raw.runs) : 0,
+		stars: Array.isArray(raw.stars) ? raw.stars.map((n) => typeof n === "number" ? n & 7 : 0) : []
 	};
 }
 function loadSave() {
@@ -1293,9 +1653,12 @@ function Ogonyok() {
 	const accRef = (0, import_react.useRef)(0);
 	const menuTime = (0, import_react.useRef)(0);
 	const deathLatch = (0, import_react.useRef)(false);
+	const winLatch = (0, import_react.useRef)(false);
+	const levelRef = (0, import_react.useRef)(-1);
 	const tutorialRef = (0, import_react.useRef)(false);
 	const reducedRef = (0, import_react.useRef)(false);
 	const onDeadRef = (0, import_react.useRef)(() => {});
+	const onWinRef = (0, import_react.useRef)(() => {});
 	const startRef = (0, import_react.useRef)(() => {});
 	const scoreRef = (0, import_react.useRef)(null);
 	const meterRef = (0, import_react.useRef)(null);
@@ -1341,16 +1704,24 @@ function Ogonyok() {
 		const rel = (clientX - rect.left) / Math.max(rect.width, 1);
 		return Math.max(0, Math.min(390, rel * 390));
 	}
-	function startGame() {
+	function begin(sim, level) {
 		const audio = getAudio();
 		audio.unlock();
 		audio.setMuted(saveRef.current.muted);
-		simRef.current = createSim();
+		simRef.current = sim;
+		levelRef.current = level;
 		deathLatch.current = false;
+		winLatch.current = false;
 		accRef.current = 0;
-		tutorialRef.current = saveRef.current.runs === 0;
+		tutorialRef.current = level < 0 ? saveRef.current.runs === 0 : level === 0 && (saveRef.current.stars[0] ?? 0) === 0;
 		setStats(null);
 		go("play");
+	}
+	function startGame() {
+		begin(createSim(), -1);
+	}
+	function startLevel(index) {
+		begin(createLevel(index), index);
 	}
 	startRef.current = startGame;
 	onDeadRef.current = () => {
@@ -1372,11 +1743,56 @@ function Ogonyok() {
 				meters: metersOf(sim.player.dist),
 				gained,
 				reason: sim.reason,
-				record: score > prevBest
+				record: score > prevBest,
+				won: false,
+				level: levelRef.current,
+				starMask: 0,
+				time: sim.time,
+				par: sim.par,
+				sparksLabel: `${sim.sparksGot}/${sim.sparksTotal}`,
+				levelName: sim.levelName
 			});
 			go("over");
 			if (ADS.enabled && runIndex % ADS.interstitialEvery === 0) showInterstitial();
 		}, 420);
+	};
+	onWinRef.current = () => {
+		window.setTimeout(() => {
+			const sim = simRef.current;
+			const level = levelRef.current;
+			if (!sim || !sim.won || screenRef.current !== "play") return;
+			const score = Math.floor(sim.player.score);
+			const gained = sparkGain(score);
+			const mask = starsEarned(true, sim.sparksGot, sim.sparksTotal, sim.time, sim.par);
+			const prevBest = saveRef.current.best;
+			commit((s) => {
+				const stars = s.stars.slice();
+				while (stars.length <= level) stars.push(0);
+				if (level >= 0) stars[level] = (stars[level] ?? 0) | mask;
+				return {
+					...s,
+					stars,
+					best: Math.max(s.best, score),
+					sparks: s.sparks + gained,
+					runs: s.runs + 1
+				};
+			});
+			setStats({
+				score,
+				meters: metersOf(sim.player.dist),
+				gained,
+				reason: null,
+				record: score > prevBest,
+				won: true,
+				level,
+				starMask: mask,
+				time: sim.time,
+				par: sim.par,
+				sparksLabel: `${sim.sparksGot}/${sim.sparksTotal}`,
+				levelName: sim.levelName
+			});
+			go("over");
+		}, 520);
 	};
 	(0, import_react.useEffect)(() => {
 		const loaded = loadSave();
@@ -1461,21 +1877,26 @@ function Ogonyok() {
 								onDeadRef.current();
 								break;
 							}
+							if (sim.won && !winLatch.current) {
+								winLatch.current = true;
+								onWinRef.current();
+								break;
+							}
 						}
 					}
 					drawPlay(ctx, sim, lh, flame, reducedRef.current, saveRef.current.shake);
 					if (mode === "play") {
 						const score = Math.floor(sim.player.score);
 						if (scoreRef.current) scoreRef.current.textContent = String(score);
-						if (meterRef.current) meterRef.current.textContent = `${metersOf(sim.player.dist)} м`;
-						if (skyRef.current) skyRef.current.textContent = BIOMES[sim.biome]?.name ?? "";
-						if (comboRef.current) comboRef.current.textContent = sim.player.combo >= 2 ? `серия ×${sim.player.combo}` : "";
+						if (meterRef.current) meterRef.current.textContent = sim.finite ? `${sim.sparksGot}/${sim.sparksTotal} искр` : `${metersOf(sim.player.dist)} м`;
+						if (skyRef.current) skyRef.current.textContent = sim.finite ? sim.levelName : BIOMES[sim.biome]?.name ?? "";
+						if (comboRef.current) comboRef.current.textContent = sim.player.combo >= 2 ? `серия ×${sim.player.combo}` : sim.boost > 0 ? "порыв" : sim.magnet > 0 ? "магнит" : sim.slowing ? "смола" : "";
 						if (wickRef.current) {
 							const wick = Math.max(0, sim.player.wick);
 							wickRef.current.style.width = `${wick}%`;
 							wickRef.current.dataset.low = wick < 28 ? "1" : "0";
 						}
-						if (hintRef.current) hintRef.current.textContent = tutorialRef.current && sim.time < 2.8 ? "Веди пальцем — пламя за тобой" : "";
+						if (hintRef.current) hintRef.current.textContent = tutorialRef.current && sim.time < 3.2 ? sim.finite ? "Кольцо ускоряет. Магнит тянет искры с краёв." : "Веди пальцем — пламя за тобой" : "";
 					}
 				} else if (mode === "pause" && sim) drawPlay(ctx, sim, lh, flame, reducedRef.current, false);
 				else {
@@ -1524,7 +1945,7 @@ function Ogonyok() {
 		});
 	}
 	function pause() {
-		if (!simRef.current?.player.alive) return;
+		if (!simRef.current?.player.alive || simRef.current.won) return;
 		go("pause");
 	}
 	function resume() {
@@ -1585,7 +2006,7 @@ function Ogonyok() {
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "mt-3 max-w-xs text-sm text-pretty text-muted",
-								children: "Веди пальцем или мышью. Пролетай в просветы и пей масло — фитиль тает сам."
+								children: "Пятнадцать дворов. Звезда за финиш, за все искры и за быстрый подъём."
 							})
 						]
 					}),
@@ -1610,17 +2031,32 @@ function Ogonyok() {
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 										className: "text-gold",
 										children: save.sparks
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "mx-2 text-line",
+										children: "·"
+									}),
+									"Звёзды ",
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "text-gold",
+										children: save.stars.reduce((sum, mask) => sum + starCount(mask), 0)
 									})
 								]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 								type: "button",
-								onClick: startGame,
+								onClick: () => go("levels"),
 								className: "flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ember font-display text-lg font-semibold text-on-ember",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Play, {
 									className: "size-5",
 									"aria-hidden": true
-								}), "Играть"]
+								}), "Уровни"]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								type: "button",
+								onClick: startGame,
+								className: "mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full border border-line bg-surface text-sm font-semibold text-fg",
+								children: "Без конца"
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 								type: "button",
@@ -1744,15 +2180,42 @@ function Ogonyok() {
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "text-xs font-semibold tracking-widest text-gold uppercase",
-							children: stats.reason === "wick" ? "Фитиль сгорел" : "Сбился с пути"
+							children: stats.won ? stats.levelName || "Пройдено" : stats.reason === "wick" ? "Фитиль сгорел" : "Сбился с пути"
 						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						stats.won ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							className: "mt-2 font-display text-3xl tracking-[0.3em] text-gold",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: stats.starMask & 1 ? "" : "opacity-25",
+									children: "★"
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: stats.starMask & 2 ? "" : "opacity-25",
+									children: "★"
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: stats.starMask & 4 ? "" : "opacity-25",
+									children: "★"
+								})
+							]
+						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "mt-1 font-display text-5xl font-bold text-fg tabular-nums",
 							children: stats.score
 						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "mt-1 text-sm text-muted tabular-nums",
-							children: [
+							children: stats.won ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+								stats.time.toFixed(1),
+								" с из ",
+								stats.par,
+								" с",
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "mx-2 text-line",
+									children: "·"
+								}),
+								"искры ",
+								stats.sparksLabel
+							] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
 								"Высота ",
 								stats.meters,
 								" м",
@@ -1763,29 +2226,42 @@ function Ogonyok() {
 								"+",
 								stats.gained,
 								" искр"
-							]
+							] })
 						}),
-						stats.record && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						stats.won && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "mt-1 text-xs text-muted",
+							children: "Финиш, все искры, уложиться в темп."
+						}),
+						stats.record && !stats.won && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "mt-1 font-display text-sm text-gold",
 							children: "Новый рекорд"
 						}),
+						stats.won && stats.level >= 0 && stats.level + 1 < LEVELS.length && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+							type: "button",
+							onClick: () => startLevel(stats.level + 1),
+							className: "mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ember font-display text-lg font-semibold text-on-ember",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Play, {
+								className: "size-5",
+								"aria-hidden": true
+							}), "Дальше"]
+						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
-							onClick: startGame,
-							className: "mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-ember font-display text-lg font-semibold text-on-ember",
+							onClick: () => stats.level >= 0 ? startLevel(stats.level) : startGame(),
+							className: `${stats.won && stats.level + 1 < LEVELS.length ? "mt-2 h-12 border border-line bg-surface text-sm text-fg" : "mt-4 h-14 bg-ember font-display text-lg text-on-ember"} flex w-full items-center justify-center gap-2 rounded-full font-semibold`,
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(RotateCcw, {
 								className: "size-5",
 								"aria-hidden": true
 							}), "Ещё раз"]
 						}),
-						!continued && reward && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+						!stats.won && !continued && reward && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 							type: "button",
 							onClick: continueAd,
 							disabled: adBusy,
 							className: "mt-2 flex h-12 w-full items-center justify-center rounded-full border border-line bg-surface text-sm font-semibold text-fg",
 							children: adBusy ? "Реклама…" : "Продолжить за рекламу"
 						}),
-						!continued && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+						!stats.won && !continued && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
 							onClick: continuePaid,
 							disabled: !canPay,
@@ -1798,12 +2274,60 @@ function Ogonyok() {
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
-							onClick: () => go("menu"),
+							onClick: () => go(stats.level >= 0 ? "levels" : "menu"),
 							className: "mt-2 flex h-12 w-full items-center justify-center gap-2 text-sm font-semibold text-muted",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(House, { className: "size-4" }), "В меню"]
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(House, { className: "size-4" }), stats.level >= 0 ? "К уровням" : "В меню"]
 						})
 					]
 				})
+			}),
+			screen === "levels" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Sheet, {
+				title: "Уровни",
+				subtitle: `${save.stars.reduce((sum, mask) => sum + starCount(mask), 0)} / ${LEVELS.length * 3}`,
+				onClose: () => go("menu"),
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mb-3 text-sm text-muted",
+					children: "Звезда за финиш, за каждую искру и за подъём быстрее нормы. Жёлтое кольцо ускоряет, дуга — магнит, тёмная лужа — смола."
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+					className: "flex flex-col gap-2",
+					children: LEVELS.map((level, index) => {
+						const open = isOpen(save.stars, index);
+						const mask = save.stars[index] ?? 0;
+						return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+							type: "button",
+							disabled: !open,
+							onClick: () => startLevel(index),
+							className: "flex h-14 w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3 text-left disabled:opacity-40",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "w-7 font-display text-lg text-gold tabular-nums",
+									children: index + 1
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "min-w-0 flex-1 truncate font-semibold text-fg",
+									children: open ? level.name : "Закрыт"
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+									className: "font-display tracking-widest text-gold",
+									children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											className: mask & 1 ? "" : "opacity-25",
+											children: "★"
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											className: mask & 2 ? "" : "opacity-25",
+											children: "★"
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											className: mask & 4 ? "" : "opacity-25",
+											children: "★"
+										})
+									]
+								})
+							]
+						}) }, level.name);
+					})
+				})]
 			}),
 			screen === "shop" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Sheet, {
 				title: "Огни",
